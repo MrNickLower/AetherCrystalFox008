@@ -1,0 +1,48 @@
+
+name: Build Aether Crystal Fox
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.5'
+
+      - name: Extract mod source
+        run: |
+          mkdir -p mod-source
+          unzip -q AetherCrystalFox-Forge-1.18.2-github-build.zip -d mod-source
+          PROJECT_DIR="$(find mod-source -name build.gradle -print -quit | xargs dirname)"
+          test -n "$PROJECT_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Compile mod
+        run: gradle --no-daemon -p "$PROJECT_DIR" build
+
+      - name: Upload compiled JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: AetherCrystalFox-Forge-1.18.2
+          path: mod-source/**/build/libs/*.jar
+          if-no-files-found: error
